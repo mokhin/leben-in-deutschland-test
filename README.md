@@ -2,6 +2,8 @@
 
 This is a Streamlit application for the "Leben in Deutschland" test. The application presents questions and allows users to answer them, providing feedback on their answers and tracking score.
 
+Try it here: [Leben id Deutschland Test](https://leben-in-deutschland.streamlit.app/).
+
 ## Project Structure
 
 - `main.py`: The main Streamlit application file.
