@@ -31,7 +31,7 @@ def submit(df) -> None:
         if st.session_state.selected == df[st.session_state.i]["answer"].item():
             st.session_state.score += 1
     else:
-        st.warning("Select one answer")
+        pass
     return None
 
 
@@ -53,7 +53,7 @@ def main():
     # Page layout
 
     # Header
-    st.title("Test «Leben in Deutschland»")
+    st.markdown("## Leben in Deutschland Test")
 
     # Question
     # Setup
@@ -69,10 +69,7 @@ def main():
     answer = one_question_df["answer"].item()
 
     # Display
-    st.subheader(
-        one_question_df["question"].item()
-        + f" ({st.session_state.i + 1} / {len(quiz_df)})"
-    )
+    st.markdown(f"#### {one_question_df["question"].item()}")
 
     if st.session_state.submitted:
         for i, option in enumerate(options):
@@ -99,13 +96,31 @@ def main():
                 pass
     else:
         if st.session_state.i < len(quiz_df):
-            st.button("Submit", on_click=submit(quiz_df))
+            col1, col2, col3 = st.columns([6, 6.2, 2.2])
+            col1.button("Submit", on_click=submit(quiz_df), type="primary")
+            col2.button(f"Question {st.session_state.i + 1} / {len(quiz_df)}")
+            col3.button(f"Correctly: {st.session_state.score}")
 
-    st.markdown(f"#### Correctly answered: {st.session_state.score}")
+    # Get from user the question number to jump to (slider)
+    col1, col2 = st.columns([1, 3])
 
-    st.markdown("##### Teil I. Allgemeine Fragen (Part I. General questions)")
+    question_number = st.slider(
+        label="Select another question",
+        min_value=1,
+        max_value=len(quiz_df),
+        value=1,
+    )
+
+    def jump_to_question():
+        st.session_state.i = question_number - 1
+
+    if st.button("Jump to question", on_click=jump_to_question):
+        pass
+
+    # Footer
+    st.markdown("---")
     st.markdown(
-        "##### Source: [BAMF - Leben in Deutschland](https://www.bamf.de/SharedDocs/Anlagen/DE/Integration/Einbuergerung/gesamtfragenkatalog-lebenindeutschland.pdf)"
+        "###### Source: [BAMF - Leben in Deutschland](https://www.bamf.de/SharedDocs/Anlagen/DE/Integration/Einbuergerung/gesamtfragenkatalog-lebenindeutschland.pdf) (Teil I. Allgemeine Fragen (Part I. General questions))"
     )
 
 
