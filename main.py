@@ -2,6 +2,7 @@ import polars as pl
 import streamlit as st
 
 questions_file = "questions.csv"
+questions_ru_file = "questions-ru.csv"
 
 st.set_page_config(
     page_title="Leben in Deutschland Test",
@@ -12,7 +13,7 @@ st.set_page_config(
 
 
 # Functions
-@st.cache_data
+# @st.cache_data
 def load_data(file) -> pl.DataFrame:
     return pl.read_csv(file)
 
@@ -45,13 +46,19 @@ def main():
     # Setup
     quiz_df = load_data(questions_file)
 
+    # Add translation to Russian
+    is_russian = st.checkbox("Translate to Russian")
+
+    if is_russian:
+        quiz_ru_df = load_data(questions_ru_file)
+        quiz_df = pl.concat([quiz_df, quiz_ru_df], how="horizontal")
+
     st.session_state.setdefault("i", 0)
     st.session_state.setdefault("score", 0)
     st.session_state.setdefault("selected", None)
     st.session_state.setdefault("submitted", False)
 
     # Page layout
-
     # Header
     st.markdown("## Leben in Deutschland Test")
 
@@ -60,6 +67,7 @@ def main():
     one_question_df = quiz_df[st.session_state.i]
 
     # Options
+    # Without translation
     options = [
         one_question_df.select(["option_1"]).item(),
         one_question_df.select(["option_2"]).item(),
@@ -68,8 +76,22 @@ def main():
     ]
     answer = one_question_df["answer"].item()
 
+    # With translation
+    if is_russian:
+        options = [
+            f"""{one_question_df.select(["option_1"]).item()} *({one_question_df.select(["option_1_ru"]).item()})*""",
+            f"""{one_question_df.select(["option_2"]).item()} *({one_question_df.select(["option_2_ru"]).item()})*""",
+            f"""{one_question_df.select(["option_3"]).item()} *({one_question_df.select(["option_3_ru"]).item()})*""",
+            f"""{one_question_df.select(["option_4"]).item()} *({one_question_df.select(["option_4_ru"]).item()})*""",
+        ]
+        answer = f"""{one_question_df["answer"].item()} *({one_question_df["answer_ru"].item()})*"""
+        
+
     # Display
     st.markdown(f"#### {one_question_df["question"].item()}")
+    
+    if is_russian:
+        st.markdown(f"###### {one_question_df["question_ru"].item()}")
 
     if st.session_state.submitted:
         for i, option in enumerate(options):
@@ -96,10 +118,10 @@ def main():
                 pass
     else:
         if st.session_state.i < len(quiz_df):
-            col1, col2, col3 = st.columns([6, 6.2, 2.2])
+            col1, col2, col3 = st.columns([6, 6.2, 2.35])
             col1.button("Submit", on_click=submit(quiz_df), type="primary")
             col2.button(f"Question {st.session_state.i + 1} / {len(quiz_df)}")
-            col3.button(f"Correctly: {st.session_state.score}")
+            col3.button(f"Correctly: {st.session_state.score}  ")
 
     # Get from user the question number to jump to (slider)
     col1, col2 = st.columns([1, 3])
