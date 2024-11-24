@@ -1,3 +1,5 @@
+import random
+
 import polars as pl
 import streamlit as st
 
@@ -25,11 +27,13 @@ def restart() -> None:
     st.session_state.score = 0
     st.session_state.selected = None
     st.session_state.submitted = False
+    st.session_state.answered = 0
     return None
 
 
 def submit(df) -> None:
     if st.session_state.selected is not None:
+        st.session_state.answered += 1
         st.session_state.submitted = True
         answer = df[st.session_state.i]["answer"].item()
 
@@ -40,8 +44,11 @@ def submit(df) -> None:
     return None
 
 
-def next():
+def next(is_random: bool = False, last_question: int = 0) -> None:
     st.session_state.i += 1
+
+    if is_random:
+        st.session_state.i = random.randint(1, last_question)
     st.session_state.selected = None
     st.session_state.submitted = False
 
@@ -52,6 +59,9 @@ def main():
 
     # Add translation to Russian
     is_russian = st.checkbox("Translate to Russian")
+
+    #
+    is_random = st.checkbox("Randomize questions order")
 
     if is_russian:
         quiz_ru_df = load_data(questions_ru_file)
@@ -71,6 +81,7 @@ def main():
     st.session_state.setdefault("score", 0)
     st.session_state.setdefault("selected", None)
     st.session_state.setdefault("submitted", False)
+    st.session_state.setdefault("answered", 0)
 
     # Page layout
     # Header
@@ -107,19 +118,25 @@ def main():
 
     if st.session_state.submitted:
         if st.session_state.i < len(quiz_df) - 1:
-            st.button("Next", on_click=next, icon="➡️")
+            st.button(
+                "Next",
+                on_click=next(is_random=is_random, last_question=len(quiz_df)),
+                icon="➡️",
+            )
         else:
             st.write(
-                f"Completed! Your score is: {st.session_state.score} / {len(quiz_df)}"
+                f"Completed! Your score is: {st.session_state.score} / {st.session_state.answered}"
             )
             if st.button("Restart", on_click=restart):
                 pass
     else:
         if st.session_state.i < len(quiz_df):
-            col1, col2, col3 = st.columns([6, 6.2, 2.35])
+            col1, col2, col3 = st.columns([6, 6, 2.8])
             col1.button("Submit", on_click=submit(quiz_df), type="primary")
             col2.button(f"Question {st.session_state.i + 1} / {len(quiz_df)}")
-            col3.button(f"Correctly: {st.session_state.score}  ")
+            col3.button(
+                f"Correctly: {st.session_state.score} / {st.session_state.answered}"
+            )
 
     # Get from user the question number to jump to (slider)
     col1, col2 = st.columns([1, 3])
