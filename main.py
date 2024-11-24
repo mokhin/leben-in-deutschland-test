@@ -4,6 +4,8 @@ import streamlit as st
 questions_file = "questions.csv"
 questions_ru_file = "questions-ru.csv"
 
+is_russian = False
+
 st.set_page_config(
     page_title="Leben in Deutschland Test",
     page_icon=":memo:",
@@ -29,7 +31,9 @@ def restart() -> None:
 def submit(df) -> None:
     if st.session_state.selected is not None:
         st.session_state.submitted = True
-        if st.session_state.selected == df[st.session_state.i]["answer"].item():
+        answer = df[st.session_state.i]["answer"].item()
+
+        if st.session_state.selected == answer:
             st.session_state.score += 1
     else:
         pass
@@ -53,6 +57,16 @@ def main():
         quiz_ru_df = load_data(questions_ru_file)
         quiz_df = pl.concat([quiz_df, quiz_ru_df], how="horizontal")
 
+        # Add to original strings the translation
+        quiz_df = quiz_df.with_columns(
+            question=pl.col("question") + " (" + pl.col("question_ru") + ")",
+            option_1=pl.col("option_1") + " (" + pl.col("option_1_ru") + ")",
+            option_2=pl.col("option_2") + " (" + pl.col("option_2_ru") + ")",
+            option_3=pl.col("option_3") + " (" + pl.col("option_3_ru") + ")",
+            option_4=pl.col("option_4") + " (" + pl.col("option_4_ru") + ")",
+            answer=pl.col("answer") + " (" + pl.col("answer_ru") + ")",
+        )
+
     st.session_state.setdefault("i", 0)
     st.session_state.setdefault("score", 0)
     st.session_state.setdefault("selected", None)
@@ -62,36 +76,20 @@ def main():
     # Header
     st.markdown("## Leben in Deutschland Test")
 
-    # Question
-    # Setup
+    # One question
     one_question_df = quiz_df[st.session_state.i]
 
     # Options
-    # Without translation
     options = [
-        one_question_df.select(["option_1"]).item(),
-        one_question_df.select(["option_2"]).item(),
-        one_question_df.select(["option_3"]).item(),
-        one_question_df.select(["option_4"]).item(),
+        one_question_df["option_1"].item(),
+        one_question_df["option_2"].item(),
+        one_question_df["option_3"].item(),
+        one_question_df["option_4"].item(),
     ]
     answer = one_question_df["answer"].item()
 
-    # With translation
-    if is_russian:
-        options = [
-            f"""{one_question_df.select(["option_1"]).item()} *({one_question_df.select(["option_1_ru"]).item()})*""",
-            f"""{one_question_df.select(["option_2"]).item()} *({one_question_df.select(["option_2_ru"]).item()})*""",
-            f"""{one_question_df.select(["option_3"]).item()} *({one_question_df.select(["option_3_ru"]).item()})*""",
-            f"""{one_question_df.select(["option_4"]).item()} *({one_question_df.select(["option_4_ru"]).item()})*""",
-        ]
-        answer = f"""{one_question_df["answer"].item()} *({one_question_df["answer_ru"].item()})*"""
-        
-
     # Display
     st.markdown(f"#### {one_question_df["question"].item()}")
-    
-    if is_russian:
-        st.markdown(f"###### {one_question_df["question_ru"].item()}")
 
     if st.session_state.submitted:
         for i, option in enumerate(options):
